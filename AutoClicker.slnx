@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AutoClicker.App/AutoClicker.App.csproj" />
+    <Project Path="src/AutoClicker.Core/AutoClicker.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AutoClicker.Core.Tests/AutoClicker.Core.Tests.csproj" />
+  </Folder>
+</Solution>

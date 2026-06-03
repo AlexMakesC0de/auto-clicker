@@ -1,0 +1,43 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:AutoClicker.App.Settings"
+        x:Class="AutoClicker.App.Settings.SettingsWindow"
+        x:DataType="vm:SettingsViewModel"
+        Width="360" SizeToContent="Height"
+        CanResize="False"
+        Title="Auto Clicker — Settings"
+        WindowStartupLocation="CenterScreen">
+  <StackPanel Margin="16" Spacing="10">
+
+    <TextBlock Text="Interval (ms)" />
+    <NumericUpDown Minimum="1" Maximum="600000" Increment="10" Value="{Binding IntervalMs}" />
+
+    <TextBlock Text="Button" />
+    <ComboBox ItemsSource="{Binding Buttons}" SelectedItem="{Binding Button}" HorizontalAlignment="Stretch" />
+
+    <TextBlock Text="Click type" />
+    <ComboBox ItemsSource="{Binding ClickTypes}" SelectedItem="{Binding ClickType}" HorizontalAlignment="Stretch" />
+
+    <CheckBox Content="Stop after N clicks" IsChecked="{Binding HasClickLimit}" />
+    <NumericUpDown Minimum="1" Maximum="1000000" Increment="1"
+                   Value="{Binding ClickLimit}" IsEnabled="{Binding HasClickLimit}" />
+
+    <CheckBox Content="Randomized jitter (timing + position)" IsChecked="{Binding JitterEnabled}" />
+
+    <TextBlock Text="Target" />
+    <ComboBox ItemsSource="{Binding TargetModes}" SelectedItem="{Binding TargetMode}" HorizontalAlignment="Stretch" />
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <NumericUpDown Width="100" Value="{Binding FixedX}" />
+      <NumericUpDown Width="100" Value="{Binding FixedY}" />
+      <Button Content="Capture position" Click="OnCaptureClick" />
+    </StackPanel>
+
+    <TextBlock Text="Start/Stop hotkey" />
+    <ComboBox ItemsSource="{Binding Hotkeys}" SelectedItem="{Binding Hotkey}" HorizontalAlignment="Stretch" />
+
+    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+      <TextBlock Text="{Binding Status}" VerticalAlignment="Center" />
+      <Button Content="Save" Click="OnSaveClick" />
+    </StackPanel>
+  </StackPanel>
+</Window>
