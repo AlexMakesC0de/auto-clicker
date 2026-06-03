@@ -1,0 +1,12 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="AutoClicker.App.Dialogs.MessageWindow"
+        Width="440" SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        Title="Auto Clicker">
+  <StackPanel Margin="18" Spacing="14">
+    <TextBlock x:Name="MessageText" TextWrapping="Wrap" />
+    <Button Content="OK" HorizontalAlignment="Right" MinWidth="80" Click="OnOkClick" />
+  </StackPanel>
+</Window>
