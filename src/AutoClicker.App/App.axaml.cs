@@ -38,6 +38,11 @@ public partial class App : Application
             BuildTrayIcon();
             _controller.Initialize();
             UpdateToggleLabel();
+
+            // Show the settings window on launch so it's obvious the app started.
+            // On Windows 11 the tray icon otherwise hides in the overflow flyout.
+            // Closing this window keeps the app running in the tray (OnExplicitShutdown).
+            OpenSettings();
         }
 
         base.OnFrameworkInitializationCompleted();
