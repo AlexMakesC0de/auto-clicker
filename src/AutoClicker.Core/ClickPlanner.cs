@@ -1,6 +1,6 @@
 namespace AutoClicker.Core;
 
-/// <summary>Pure computation of per-click delay and target position, including jitter.</summary>
+/// <summary>Pure, stateless computation of the next click action for either target mode.</summary>
 public sealed class ClickPlanner
 {
     private const double TimingJitterFraction = 0.15; // +/-15%
@@ -10,26 +10,34 @@ public sealed class ClickPlanner
 
     public ClickPlanner(IRandomSource random) => _random = random;
 
-    public int ComputeDelayMs(AppSettings s)
+    public int ComputeDelayMs(int baseMs, bool jitter)
     {
-        int baseMs = Math.Max(1, s.IntervalMs);
-        if (!s.JitterEnabled) return baseMs;
-
-        // map [0,1) -> [-1,1], then scale
+        int b = Math.Max(1, baseMs);
+        if (!jitter) return b;
         double factor = 1.0 + (_random.NextDouble() * 2.0 - 1.0) * TimingJitterFraction;
-        return Math.Max(1, (int)Math.Round(baseMs * factor));
+        return Math.Max(1, (int)Math.Round(b * factor));
     }
 
-    public (int? X, int? Y) ComputeTarget(AppSettings s)
+    public (int X, int Y) JitterPosition(int x, int y) => (x + Offset(), y + Offset());
+
+    private int Offset() => (int)Math.Round((_random.NextDouble() * 2.0 - 1.0) * PositionJitterPixels);
+
+    /// <summary>Next action + the index to use on the following call. Null = nothing to do (empty sequence).</summary>
+    public (ClickAction Action, int NextIndex)? Next(AppSettings s, int index)
     {
-        if (s.TargetMode == TargetMode.CurrentCursor) return (null, null);
-        if (!s.JitterEnabled) return (s.FixedX, s.FixedY);
+        if (s.TargetMode == TargetMode.CurrentCursor)
+        {
+            int delay = ComputeDelayMs(s.IntervalMs, s.JitterEnabled);
+            return (new ClickAction(delay, null, null, s.Button, s.ClickType), 0);
+        }
 
-        int dx = Offset();
-        int dy = Offset();
-        return (s.FixedX + dx, s.FixedY + dy);
+        var steps = s.Sequence;
+        if (steps.Count == 0) return null;
+
+        int i = ((index % steps.Count) + steps.Count) % steps.Count;
+        var step = steps[i];
+        int d = ComputeDelayMs(step.DelayMs, s.JitterEnabled);
+        var (x, y) = s.JitterEnabled ? JitterPosition(step.X, step.Y) : (step.X, step.Y);
+        return (new ClickAction(d, x, y, step.Button, step.ClickType), (i + 1) % steps.Count);
     }
-
-    private int Offset() =>
-        (int)Math.Round((_random.NextDouble() * 2.0 - 1.0) * PositionJitterPixels);
 }

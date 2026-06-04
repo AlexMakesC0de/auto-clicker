@@ -28,28 +28,33 @@ public class ClickEngineTests
     }
 
     [Fact]
-    public async Task RunAsync_UsesButtonTypeAndTargetFromSettings()
+    public async Task RunAsync_Sequence_CyclesPositionsAndCountsEachAction()
     {
         var input = new FakeInputSimulator();
-        var clock = new FakeClock();
-        var settings = new AppSettings
-        {
-            ClickLimit = 1,
-            Button = ClickButton.Right,
-            ClickType = ClickType.Double,
-            TargetMode = TargetMode.FixedCoordinate,
-            FixedX = 400,
-            FixedY = 250,
-        };
-        var engine = NewEngine(settings, input, clock);
+        var settings = new AppSettings { TargetMode = TargetMode.Sequence, ClickLimit = 3 };
+        settings.Sequence.Add(new SequenceStep { X = 10, Y = 20, Button = ClickButton.Left,  ClickType = ClickType.Single });
+        settings.Sequence.Add(new SequenceStep { X = 30, Y = 40, Button = ClickButton.Right, ClickType = ClickType.Double });
+        var engine = NewEngine(settings, input, new FakeClock());
 
         await engine.RunAsync(CancellationToken.None);
 
-        var click = Assert.Single(input.Clicks);
-        Assert.Equal(400, click.X);
-        Assert.Equal(250, click.Y);
-        Assert.Equal(ClickButton.Right, click.Button);
-        Assert.Equal(ClickType.Double, click.Type);
+        Assert.Equal(3, input.Clicks.Count);
+        Assert.Equal(new FakeInputSimulator.Recorded(10, 20, ClickButton.Left, ClickType.Single), input.Clicks[0]);
+        Assert.Equal(new FakeInputSimulator.Recorded(30, 40, ClickButton.Right, ClickType.Double), input.Clicks[1]);
+        Assert.Equal(new FakeInputSimulator.Recorded(10, 20, ClickButton.Left, ClickType.Single), input.Clicks[2]);
+    }
+
+    [Fact]
+    public async Task RunAsync_SequenceMode_EmptyList_StopsImmediately()
+    {
+        var input = new FakeInputSimulator();
+        var settings = new AppSettings { TargetMode = TargetMode.Sequence }; // empty
+        var engine = NewEngine(settings, input, new FakeClock());
+
+        await engine.RunAsync(CancellationToken.None);
+
+        Assert.Empty(input.Clicks);
+        Assert.False(engine.IsRunning);
     }
 
     [Fact]
