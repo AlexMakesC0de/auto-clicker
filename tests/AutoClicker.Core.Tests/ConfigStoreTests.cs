@@ -13,57 +13,56 @@ public class ConfigStoreTests : IDisposable
     private string FilePath => Path.Combine(_dir, "config.json");
 
     [Fact]
-    public void SaveThenLoad_RoundTripsAllFields()
+    public void SaveThenLoad_RoundTripsSequenceAndHotkeys()
     {
         var store = new ConfigStore(FilePath);
         var saved = new AppSettings
         {
-            IntervalMs = 42,
-            Button = ClickButton.Middle,
-            ClickType = ClickType.Double,
-            ClickLimit = 7,
+            TargetMode = TargetMode.Sequence,
             JitterEnabled = true,
-            TargetMode = TargetMode.FixedCoordinate,
-            FixedX = 11,
-            FixedY = 22,
-            Hotkey = HotKey.F9,
+            ClickLimit = 7,
+            StartStopHotkey = new Hotkey(KeyId.F6, Ctrl: true),
+            CaptureHotkey = new Hotkey(KeyId.Backquote, Shift: true, Alt: true),
         };
+        saved.Sequence.Add(new SequenceStep { X = 11, Y = 22, Button = ClickButton.Right, ClickType = ClickType.Double, DelayMs = 250 });
 
         store.Save(saved);
         var loaded = store.Load();
 
-        Assert.Equal(42, loaded.IntervalMs);
-        Assert.Equal(ClickButton.Middle, loaded.Button);
-        Assert.Equal(ClickType.Double, loaded.ClickType);
-        Assert.Equal(7, loaded.ClickLimit);
+        Assert.Equal(TargetMode.Sequence, loaded.TargetMode);
         Assert.True(loaded.JitterEnabled);
-        Assert.Equal(TargetMode.FixedCoordinate, loaded.TargetMode);
-        Assert.Equal(11, loaded.FixedX);
-        Assert.Equal(22, loaded.FixedY);
-        Assert.Equal(HotKey.F9, loaded.Hotkey);
+        Assert.Equal(7, loaded.ClickLimit);
+        Assert.Equal(new Hotkey(KeyId.F6, Ctrl: true), loaded.StartStopHotkey);
+        Assert.Equal(new Hotkey(KeyId.Backquote, Shift: true, Alt: true), loaded.CaptureHotkey);
+        var step = Assert.Single(loaded.Sequence);
+        Assert.Equal(11, step.X);
+        Assert.Equal(22, step.Y);
+        Assert.Equal(ClickButton.Right, step.Button);
+        Assert.Equal(ClickType.Double, step.ClickType);
+        Assert.Equal(250, step.DelayMs);
     }
 
     [Fact]
     public void Load_MissingFile_ReturnsDefaults()
     {
-        var store = new ConfigStore(FilePath);
-
-        var loaded = store.Load();
-
-        Assert.Equal(new AppSettings().IntervalMs, loaded.IntervalMs);
-        Assert.Equal(HotKey.F6, loaded.Hotkey);
+        var loaded = new ConfigStore(FilePath).Load();
+        Assert.Equal(new Hotkey(KeyId.F6), loaded.StartStopHotkey);
+        Assert.Equal(TargetMode.CurrentCursor, loaded.TargetMode);
     }
 
     [Fact]
-    public void Load_CorruptFile_ReturnsDefaults()
+    public void Load_LegacyConfig_FallsBackToDefaultsWithoutThrowing()
     {
+        // Old schema: a removed TargetMode value and a bare string Hotkey.
         Directory.CreateDirectory(_dir);
-        File.WriteAllText(FilePath, "{ this is not valid json");
-        var store = new ConfigStore(FilePath);
+        File.WriteAllText(FilePath,
+            "{ \"TargetMode\": \"FixedCoordinate\", \"FixedX\": 5, \"Hotkey\": \"F6\" }");
 
-        var loaded = store.Load();
+        var loaded = new ConfigStore(FilePath).Load();
 
         Assert.Equal(new AppSettings().IntervalMs, loaded.IntervalMs);
+        Assert.Equal(new Hotkey(KeyId.F6), loaded.StartStopHotkey);
+        Assert.Equal(TargetMode.CurrentCursor, loaded.TargetMode);
     }
 
     public void Dispose()
