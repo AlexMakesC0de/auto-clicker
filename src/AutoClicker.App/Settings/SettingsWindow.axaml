@@ -3,41 +3,86 @@
         xmlns:vm="clr-namespace:AutoClicker.App.Settings"
         x:Class="AutoClicker.App.Settings.SettingsWindow"
         x:DataType="vm:SettingsViewModel"
-        Width="360" SizeToContent="Height"
-        CanResize="False"
+        Width="460" Height="640"
+        CanResize="True"
         Title="Auto Clicker — Settings"
         WindowStartupLocation="CenterScreen">
-  <StackPanel Margin="16" Spacing="10">
+  <ScrollViewer>
+    <StackPanel Margin="16" Spacing="10">
 
-    <TextBlock Text="Interval (ms)" />
-    <NumericUpDown Minimum="1" Maximum="600000" Increment="10" Value="{Binding IntervalMs}" />
+      <TextBlock Text="Mode" FontWeight="Bold" />
+      <ComboBox ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}" HorizontalAlignment="Stretch" />
 
-    <TextBlock Text="Button" />
-    <ComboBox ItemsSource="{Binding Buttons}" SelectedItem="{Binding Button}" HorizontalAlignment="Stretch" />
+      <!-- Current-cursor section -->
+      <StackPanel Spacing="8" IsVisible="{Binding IsCursorMode}">
+        <TextBlock Text="Interval (ms)" />
+        <NumericUpDown Minimum="1" Maximum="600000" Increment="10" FormatString="0" Value="{Binding IntervalMs}" />
+        <TextBlock Text="Button" />
+        <ComboBox ItemsSource="{Binding Buttons}" SelectedItem="{Binding Button}" HorizontalAlignment="Stretch" />
+        <TextBlock Text="Click type" />
+        <ComboBox ItemsSource="{Binding ClickTypes}" SelectedItem="{Binding ClickType}" HorizontalAlignment="Stretch" />
+      </StackPanel>
 
-    <TextBlock Text="Click type" />
-    <ComboBox ItemsSource="{Binding ClickTypes}" SelectedItem="{Binding ClickType}" HorizontalAlignment="Stretch" />
+      <!-- Sequence section -->
+      <StackPanel Spacing="8" IsVisible="{Binding IsSequenceMode}">
+        <TextBlock Text="Positions (move → click → wait → next → loop)" FontWeight="Bold" />
+        <TextBlock Text="Tip: press the capture hotkey while hovering a target to add its position."
+                   TextWrapping="Wrap" Foreground="Gray" FontSize="12" />
+        <Grid ColumnDefinitions="40,90,90,90,110,Auto">
+          <TextBlock Grid.Column="0" Text="#" />
+          <TextBlock Grid.Column="1" Text="X" />
+          <TextBlock Grid.Column="2" Text="Y" />
+          <TextBlock Grid.Column="3" Text="Wait (ms)" />
+          <TextBlock Grid.Column="4" Text="Action" />
+        </Grid>
+        <ItemsControl ItemsSource="{Binding Steps}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:SequenceStepViewModel">
+              <Grid ColumnDefinitions="40,90,90,90,110,Auto" Margin="0,2">
+                <NumericUpDown Grid.Column="1" Width="86" FormatString="0" Minimum="-100000" Maximum="100000" Value="{Binding X}" />
+                <NumericUpDown Grid.Column="2" Width="86" FormatString="0" Minimum="-100000" Maximum="100000" Value="{Binding Y}" />
+                <NumericUpDown Grid.Column="3" Width="86" FormatString="0" Minimum="1" Maximum="600000" Value="{Binding DelayMs}" />
+                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="2">
+                  <ComboBox Width="62" ItemsSource="{Binding Buttons}" SelectedItem="{Binding Button}" />
+                  <ComboBox Width="44" ItemsSource="{Binding ClickTypes}" SelectedItem="{Binding ClickType}" />
+                </StackPanel>
+                <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="2">
+                  <Button Content="↑" Click="OnMoveUpClick" />
+                  <Button Content="↓" Click="OnMoveDownClick" />
+                  <Button Content="✕" Click="OnRemoveStepClick" />
+                </StackPanel>
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Content="Add row" Click="OnAddRowClick" />
+          <Button Content="Clear all" Click="OnClearAllClick" />
+        </StackPanel>
+      </StackPanel>
 
-    <CheckBox Content="Stop after N clicks" IsChecked="{Binding HasClickLimit}" />
-    <NumericUpDown Minimum="1" Maximum="1000000" Increment="1"
-                   Value="{Binding ClickLimit}" IsEnabled="{Binding HasClickLimit}" />
+      <!-- Global -->
+      <CheckBox Content="Randomized jitter (timing + position)" IsChecked="{Binding JitterEnabled}" />
+      <CheckBox Content="Stop after N clicks" IsChecked="{Binding HasClickLimit}" />
+      <NumericUpDown Minimum="1" Maximum="1000000" Increment="1" FormatString="0"
+                     Value="{Binding ClickLimit}" IsEnabled="{Binding HasClickLimit}" />
 
-    <CheckBox Content="Randomized jitter (timing + position)" IsChecked="{Binding JitterEnabled}" />
+      <!-- Hotkeys -->
+      <TextBlock Text="Start/Stop hotkey" FontWeight="Bold" />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Text="{Binding StartStopText}" VerticalAlignment="Center" MinWidth="160" />
+        <Button Content="Set…" Click="OnRecordStartStopClick" />
+      </StackPanel>
+      <TextBlock Text="Capture-position hotkey" FontWeight="Bold" />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Text="{Binding CaptureText}" VerticalAlignment="Center" MinWidth="160" />
+        <Button Content="Set…" Click="OnRecordCaptureClick" />
+      </StackPanel>
 
-    <TextBlock Text="Target" />
-    <ComboBox ItemsSource="{Binding TargetModes}" SelectedItem="{Binding TargetMode}" HorizontalAlignment="Stretch" />
-    <StackPanel Orientation="Horizontal" Spacing="8">
-      <NumericUpDown Width="100" Value="{Binding FixedX}" />
-      <NumericUpDown Width="100" Value="{Binding FixedY}" />
-      <Button Content="Capture position" Click="OnCaptureClick" />
+      <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+        <TextBlock Text="{Binding Status}" VerticalAlignment="Center" />
+        <Button Content="Save" Click="OnSaveClick" />
+      </StackPanel>
     </StackPanel>
-
-    <TextBlock Text="Start/Stop hotkey" />
-    <ComboBox ItemsSource="{Binding Hotkeys}" SelectedItem="{Binding Hotkey}" HorizontalAlignment="Stretch" />
-
-    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-      <TextBlock Text="{Binding Status}" VerticalAlignment="Center" />
-      <Button Content="Save" Click="OnSaveClick" />
-    </StackPanel>
-  </StackPanel>
+  </ScrollViewer>
 </Window>

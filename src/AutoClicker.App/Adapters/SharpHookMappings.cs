@@ -25,7 +25,7 @@ internal static class SharpHookMappings
         (KeyId.Backquote, KeyCode.VcBackQuote), (KeyId.Minus, KeyCode.VcMinus), (KeyId.Equals, KeyCode.VcEquals),
         (KeyId.LeftBracket, KeyCode.VcOpenBracket), (KeyId.RightBracket, KeyCode.VcCloseBracket),
         (KeyId.Semicolon, KeyCode.VcSemicolon), (KeyId.Quote, KeyCode.VcQuote), (KeyId.Comma, KeyCode.VcComma),
-        (KeyId.Period, KeyCode.VcPeriod), (KeyId.Slash, KeyCode.VcSlash), (KeyId.Backslash, KeyCode.VcBackSlash),
+        (KeyId.Period, KeyCode.VcPeriod), (KeyId.Slash, KeyCode.VcSlash), (KeyId.Backslash, KeyCode.VcBackslash),
         (KeyId.Space, KeyCode.VcSpace), (KeyId.Enter, KeyCode.VcEnter), (KeyId.Tab, KeyCode.VcTab),
         (KeyId.Escape, KeyCode.VcEscape), (KeyId.Insert, KeyCode.VcInsert), (KeyId.Delete, KeyCode.VcDelete),
         (KeyId.Home, KeyCode.VcHome), (KeyId.End, KeyCode.VcEnd),
