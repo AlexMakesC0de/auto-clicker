@@ -11,6 +11,7 @@ public sealed class ClickEngine
     private volatile AppSettings _settings;
     private CancellationTokenSource? _cts;
     private Task _loop = Task.CompletedTask;
+    private int _sequenceIndex;
 
     public ClickEngine(IInputSimulator input, IClock clock, ClickPlanner planner, AppSettings settings)
     {
@@ -55,6 +56,7 @@ public sealed class ClickEngine
     {
         IsRunning = true;
         ClicksPerformed = 0;
+        _sequenceIndex = 0;
         try
         {
             while (!cancellationToken.IsCancellationRequested)
@@ -62,12 +64,14 @@ public sealed class ClickEngine
                 var s = _settings;
                 if (s.ClickLimit is int limit && ClicksPerformed >= limit) break;
 
-                await _clock.DelayAsync(_planner.ComputeDelayMs(s), cancellationToken)
-                    .ConfigureAwait(false);
+                var next = _planner.Next(s, _sequenceIndex);
+                if (next is null) break; // empty sequence
 
-                var (x, y) = _planner.ComputeTarget(s);
-                _input.Click(x, y, s.Button, s.ClickType);
+                var (action, nextIndex) = next.Value;
+                await _clock.DelayAsync(action.DelayMs, cancellationToken).ConfigureAwait(false);
+                _input.Click(action.X, action.Y, action.Button, action.Type);
                 ClicksPerformed++;
+                _sequenceIndex = nextIndex;
             }
         }
         catch (OperationCanceledException)

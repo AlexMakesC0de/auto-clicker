@@ -15,7 +15,6 @@ public partial class App : Application
 {
     private TrayAppController? _controller;
     private TrayIcon? _trayIcon;
-    private NativeMenuItem? _toggleItem;
     private SettingsWindow? _settingsWindow;
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
@@ -31,13 +30,11 @@ public partial class App : Application
                 new SharpHookGlobalInputService(),
                 new SharpHookInputSimulator());
 
-            _controller.StateChanged += (_, _) => UpdateToggleLabel();
             _controller.HookFailed += (_, message) =>
                 new MessageWindow("Auto Clicker", message).Show();
 
             BuildTrayIcon();
             _controller.Initialize();
-            UpdateToggleLabel();
 
             // Show the settings window on launch so it's obvious the app started.
             // On Windows 11 the tray icon otherwise hides in the overflow flyout.
@@ -50,9 +47,6 @@ public partial class App : Application
 
     private void BuildTrayIcon()
     {
-        _toggleItem = new NativeMenuItem("Start");
-        _toggleItem.Click += (_, _) => _controller?.Toggle();
-
         var settingsItem = new NativeMenuItem("Settings…");
         settingsItem.Click += (_, _) => OpenSettings();
 
@@ -60,7 +54,6 @@ public partial class App : Application
         quitItem.Click += (_, _) => Quit();
 
         var menu = new NativeMenu();
-        menu.Items.Add(_toggleItem);
         menu.Items.Add(settingsItem);
         menu.Items.Add(new NativeMenuItemSeparator());
         menu.Items.Add(quitItem);
@@ -74,12 +67,6 @@ public partial class App : Application
         };
 
         TrayIcon.SetIcons(this, new TrayIcons { _trayIcon });
-    }
-
-    private void UpdateToggleLabel()
-    {
-        if (_toggleItem is not null && _controller is not null)
-            _toggleItem.Header = _controller.IsRunning ? "Stop" : "Start";
     }
 
     private void OpenSettings()

@@ -14,6 +14,10 @@ public sealed class SharpHookInputSimulator : IInputSimulator
         MouseButton mb = SharpHookMappings.ToMouseButton(button);
         int repeats = type == ClickType.Double ? 2 : 1;
 
+        // For a fixed coordinate, move the cursor there first so the motion is visible.
+        if (x is not null && y is not null)
+            _simulator.SimulateMouseMovement((short)x.Value, (short)y.Value);
+
         for (int i = 0; i < repeats; i++)
         {
             if (x is null || y is null)
