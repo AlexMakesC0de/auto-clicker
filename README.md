@@ -1,78 +1,102 @@
+<div align="center">
+
 # Auto Clicker
 
-A cross-platform (Windows, macOS, Linux/X11) system-tray auto clicker for personal use.
-Configurable rate, mouse button, single/double click, click limit, and jitter. Two targeting
-modes: **Current cursor**, or a **position sequence** (move → click → wait → next → loop) where each
-step has its own button, click type, and wait interval. Two global hotkeys, each set by **recording**
-a key combo (Ctrl/Shift/Alt/Win supported): a **start/stop** hotkey (default **F6**) and a
-**capture-position** hotkey (default **F8**) that appends the spot under your cursor to the sequence.
+**A cross-platform system tray auto clicker with global hotkeys and recorded click sequences.**
 
-Built with **.NET 10**, **Avalonia 12** (tray + settings UI), and **SharpHook 7**
-(global hotkey + synthetic clicks). The OS-independent core (`AutoClicker.Core`) is unit-tested;
-the OS input layer is verified by the manual smoke test below.
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)
+![Avalonia 12](https://img.shields.io/badge/Avalonia-12-8B44AC)
+![Windows | macOS | Linux (X11)](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20(X11)-555)
 
-## Run (development)
+</div>
 
-    dotnet run --project src/AutoClicker.App
+A personal-use auto clicker that lives in the tray (or the macOS menu bar). It clicks either wherever your cursor is, or through a list of screen positions you record with a hotkey. It is built with .NET 10, [Avalonia](https://avaloniaui.net/) for the tray and settings window, and [SharpHook](https://github.com/TolikPylypchuk/SharpHook) for the global hotkeys and synthetic clicks.
 
-On launch the Settings window opens; the app also lives in the tray/menu-bar. The tray menu gives
-only **Settings…** and **Quit**. Press the start/stop hotkey (default **F6**) to toggle clicking, and
-the capture hotkey (default **F8**) to add the cursor position to a sequence.
+## Features
 
-## Build a standalone binary (per device)
+- **Two modes.** *Current cursor* clicks where the pointer is. *Sequence* moves to each recorded position, clicks, waits and moves on, looping until you stop it.
+- **Per-step settings.** Every sequence step has its own position, mouse button, click type and wait time.
+- **Click options.** Interval in milliseconds (default 100 ms, about 10 clicks per second), left, middle or right button, single or double click, and an optional click limit that stops automatically.
+- **Jitter.** When on, each delay varies by up to 15% and each sequence position by up to 3 pixels.
+- **Recorded hotkeys.** Set each hotkey by pressing the combination you want, with Ctrl, Shift, Alt and Win/Cmd as modifiers. Esc cancels recording, and the two hotkeys cannot be the same.
+  - Start/stop, default **F6**. Holding the combo does not make it flip on and off.
+  - Capture position, default **F8**. Adds the spot under your cursor to the sequence and switches to Sequence mode.
+- **Sequence editor.** Reorder, remove, add rows or clear all.
+- **Saved settings.** Everything persists to a JSON file between runs.
 
-    # Windows
-    dotnet publish src/AutoClicker.App -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
-    # macOS (Apple Silicon -> osx-arm64, Intel -> osx-x64)
-    dotnet publish src/AutoClicker.App -c Release -r osx-arm64 --self-contained -p:PublishSingleFile=true
-    # Linux (X11)
-    dotnet publish src/AutoClicker.App -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true
+## Getting started
 
-The binary is under `src/AutoClicker.App/bin/Release/net10.0/<rid>/publish/`.
+### Prerequisites
 
-## Permissions / platform notes
+- [.NET 10 SDK](https://dotnet.microsoft.com/download)
 
-- **macOS:** Grant the app **Accessibility** AND **Input Monitoring** in
-  System Settings → Privacy & Security, then restart it. Without these, synthetic clicks and the
-  global hotkey will not work. (If the global hook cannot start, the app shows a warning dialog.)
-- **Linux:** Requires an **X11** session. Wayland sandboxes global input hooks and synthetic input,
-  so it is unsupported (XWayland may work for some setups).
-- **Windows:** Works without special permissions. To click into apps running as Administrator,
-  run the clicker as Administrator too.
+### Run from source
+
+```bash
+git clone https://github.com/AlexMakesC0de/auto-clicker.git
+cd auto-clicker
+dotnet run --project src/AutoClicker.App
+```
+
+The Settings window opens on launch and the app stays in the tray. The tray menu has **Settings...** and **Quit**. Use the start/stop hotkey to toggle clicking.
+
+### Build a standalone binary
+
+Pick the runtime for your device:
+
+```bash
+# Windows
+dotnet publish src/AutoClicker.App -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
+# macOS (Apple Silicon: osx-arm64, Intel: osx-x64)
+dotnet publish src/AutoClicker.App -c Release -r osx-arm64 --self-contained -p:PublishSingleFile=true
+# Linux (X11)
+dotnet publish src/AutoClicker.App -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true
+```
+
+The output is in `src/AutoClicker.App/bin/Release/net10.0/<runtime>/publish/`.
+
+## Platform notes
+
+- **Windows:** no special permissions. To click into apps running as Administrator, run the clicker as Administrator too.
+- **macOS:** grant the app **Accessibility** and **Input Monitoring** in System Settings > Privacy & Security, then restart it. Without them the hotkeys and clicks do not work, and the app shows a warning if the global hook cannot start.
+- **Linux:** needs an **X11** session. Wayland blocks global input hooks and synthetic input, so it is not supported (XWayland may work in some setups).
 
 ## Configuration
 
-Settings persist to a JSON file:
+Settings are saved to:
 
 - Windows: `%APPDATA%\AutoClicker\config.json`
-- macOS / Linux: `~/.config/AutoClicker/config.json`
+- macOS and Linux: `~/.config/AutoClicker/config.json`
+
+Delete the file to go back to the defaults.
+
+## How it works
+
+The solution is split so the clicking logic can be tested without touching the real mouse:
+
+- `AutoClicker.Core` holds the settings, the hotkey model, the `ClickPlanner` (works out the next click and its delay, including jitter) and the `ClickEngine` that runs the loop. Input, time and randomness are behind interfaces (`IInputSimulator`, `IGlobalInputService`, `IClock`, `IRandomSource`).
+- `AutoClicker.App` is the Avalonia app: tray controller, settings window and view models, plus SharpHook adapters that implement those interfaces against the real OS.
+
+## Project structure
+
+```text
+src/
+  AutoClicker.Core/          OS-independent logic
+  AutoClicker.App/           Avalonia tray app and SharpHook adapters
+tests/
+  AutoClicker.Core.Tests/    xUnit tests for the core
+docs/superpowers/            Design specs and implementation plans
+```
 
 ## Tests
 
-    dotnet test
+```bash
+dotnet test
+```
 
-Unit tests cover the OS-independent core (planner, engine, config). The OS-specific input layer is
-verified by the manual smoke test below.
+The unit tests cover the core: planner, engine, settings, config store and hotkeys. The OS input layer is checked by hand on each platform: launch, set a hotkey combo, capture two positions, run the sequence, edit it, and quit from the tray.
 
-## Manual smoke test (run on each OS)
+## License
 
-1. Launch the app; the Settings window appears and the tray icon shows (Win11: overflow `^`).
-2. Tray right-click menu shows only **Settings… / Quit** (no Start/Stop).
-3. **Hotkey combo:** Settings → Start/Stop → **Set…**, press **Ctrl+F6**; the row shows `Ctrl+F6`.
-   Save. Confirm Ctrl+F6 toggles clicking and bare F6 no longer does. Hold the combo — it must not
-   rapidly flip on/off (auto-repeat guard).
-4. **Esc cancels:** click **Set…**, press **Esc** — the previous combo is kept.
-5. **Capture sequence:** set a capture hotkey (default **F8**). Hover target A, press F8; hover
-   target B, press F8. Settings switches to **Sequence** mode with two rows showing real X/Y
-   (numbers fully visible, e.g. `1388`).
-6. **Run sequence:** start (your start/stop hotkey). The cursor visibly moves A → click → wait →
-   B → click → wait → loops. Per-row Button/Type/Wait take effect.
-7. **Edit:** reorder with ↑/↓, remove with ✕, **Add row** / **Clear all** work; Save persists.
-8. **Duplicate guard:** try recording the capture combo equal to start/stop — it's rejected.
-9. Quit from the tray — process exits, icon disappears.
-
-## Design & plan
-
-- Original design spec: `docs/superpowers/specs/2026-06-03-auto-clicker-design.md`
-- Hotkey-combos + sequences design: `docs/superpowers/specs/2026-06-04-hotkey-combos-and-capture-design.md`
-- Hotkey-combos + sequences plan: `docs/superpowers/plans/2026-06-04-hotkeys-and-sequences.md`
+[MIT](LICENSE)
